@@ -11,8 +11,8 @@ class WikiMovies2Spider(scrapy.Spider):
     forbidden_words = ['\n', '\xa0', '(съёмки),', ' ', ', ', '[…]', '/', ' /', '/ ', '[d]', ' и '] + [f'[{n}]' for n in range(1, 10)]
     attr_matches = {
         'genre': ['Жанры', 'Жанр', ' Жанр\n', ' Жанры\n', ' Жанр \n', ' Жанры \n', 'Жанр / тематика'],
-        'country': ['Режиссёр', 'Режиссёры'],
-        'director': ['Страна', 'Страны'],
+        'director': ['Режиссёр', 'Режиссёры'],
+        'country': ['Страна', 'Страны'],
         'year': ['Год', 'Премьера']
     }
 
@@ -22,7 +22,7 @@ class WikiMovies2Spider(scrapy.Spider):
 
     def year_parse(self, response):
         for selector in response.css("div.CategoryTreeItem"):
-            title = selector.css("a::attr(title)").extract()[0]
+            title = selector.css("a::attr(title)").extract()[0] 
             if re.search(r'по', title) is None:
                 next_page = "https://" + self.allowed_domains[0] + selector.css("a::attr(href)").extract_first()
                 if next_page:
@@ -30,10 +30,15 @@ class WikiMovies2Spider(scrapy.Spider):
 
     def movie_parse(self, response):
         for selector in response.css("div.mw-category-group"):
-            next_page = selector.css("ul > li > a::attr(href)").extract_first()
-            if next_page:
-                next_page = "https://" + self.allowed_domains[0] + str(next_page)
-                yield response.follow(url=next_page, callback=self.movie_page_parse)
+            movie_pages = selector.css("ul > li > a::attr(href)").extract()
+            for page in movie_pages:
+                if page:
+                    page = "https://" + self.allowed_domains[0] + str(page)
+                    yield response.follow(url=page, callback=self.movie_page_parse)
+        next_page = response.css("#mw-pages > a::attr(href)").extract()
+        if next_page:
+            if response.css("#mw-pages > a::text").extract()[-1] != "Предыдущая страница":
+                yield response.follow(url=response.urljoin(next_page[-1]), callback=self.movie_parse)
 
     def movie_page_parse(self, response):
         title = response.css("span.mw-page-title-main::text").extract()
