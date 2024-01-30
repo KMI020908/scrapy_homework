@@ -2,19 +2,13 @@ from typing import Iterable
 import scrapy
 import re
 from scrapy.http import Request
-
+from homework.items import MovieItem
+import numpy as np
 
 class WikiMovies2Spider(scrapy.Spider):
     name = "wiki_movies_2"
     allowed_domains = ["ru.wikipedia.org"]
     start_urls = ["https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%A4%D0%B8%D0%BB%D1%8C%D0%BC%D1%8B_%D0%BF%D0%BE_%D0%B3%D0%BE%D0%B4%D0%B0%D0%BC"]
-    forbidden_words = ['\n', '\xa0', '(съёмки),', ' ', ', ', '[…]', '/', ' /', '/ ', '[d]', ' и '] + [f'[{n}]' for n in range(1, 10)]
-    attr_matches = {
-        'genre': ['Жанры', 'Жанр', ' Жанр\n', ' Жанры\n', ' Жанр \n', ' Жанры \n', 'Жанр / тематика'],
-        'director': ['Режиссёр', 'Режиссёры'],
-        'country': ['Страна', 'Страны'],
-        'year': ['Год', 'Премьера']
-    }
 
     def start_requests(self) -> Iterable[Request]:
         URL = self.start_urls[0]
@@ -50,27 +44,29 @@ class WikiMovies2Spider(scrapy.Spider):
                     yield response.follow(url=response.urljoin(next_page), callback=self.movies_parse)
 
     def movie_page_parse(self, response):
-        
         genre, director, country = None, None, None
-        for selector in response.css("div.mw-content-ltr.mw-parser-output > table > tbody > tr"):
-            if selector.css("th.plainlist > a::text").extract_first() in self.attr_matches['genre']:
-                for genre_selector in selector.css("td.plainlist"):
-                    genre = genre_selector.css("::text").extract()
-                    genre = [el for el in genre if el not in self.forbidden_words]
-            if selector.css("th.plainlist::text").extract_first() in self.attr_matches['director']:
-                for director_selector in selector.css("td.plainlist"):
-                    director = director_selector.css("::text").extract()
-                    director = [el for el in director if el not in self.forbidden_words]
-            if selector.css("th.plainlist::text").extract_first() in self.attr_matches['country']:
-                for country_selector in selector.css("td.plainlist"):
-                    country = country_selector.css("::text").extract()
-                    country = [el for el in country if el not in self.forbidden_words]
-      
-        yield {
-            'title': response.meta['title'],
-            'genre': genre,
-            'director': director,
-            'country': country,
-            'year': response.meta['year']
-        }
+        table = response.css('div.mw-content-ltr.mw-parser-output > table > tbody > tr')
+        for row_selector in table:
+            words = [row.strip() for row in list(set(row_selector.css('::text').getall()))]
+
+            genre_lack = [word.rfind('Жанр') == -1 for word in words]
+            if not all(genre_lack):
+                genre = [word.lower() for word in np.array(words)[genre_lack]]
+
+            country_lack = [word.rfind('Стран') == -1 for word in words]
+            if not all(country_lack):
+                country = list(np.array(words)[country_lack])
+
+            director_lack = [word.rfind('Режисс') == -1 for word in words]
+            if not all(director_lack):
+                director = list(np.array(words)[director_lack])
+
+        movie_item = MovieItem()
+        movie_item['title'] = response.meta['title']
+        movie_item['genre'] = genre
+        movie_item['director'] = director
+        movie_item['country'] = country
+        movie_item['year'] = response.meta['year']
+        
+        yield movie_item
                     
