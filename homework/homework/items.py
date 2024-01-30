@@ -6,7 +6,9 @@
 import scrapy
 
 
-class HomeworkItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class MovieItem(scrapy.Item):
+    title = scrapy.Field()
+    genre = scrapy.Field()
+    director = scrapy.Field()
+    country = scrapy.Field()
+    year = scrapy.Field()
