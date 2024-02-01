@@ -11,7 +11,7 @@ import re
 class MoviePipeline:
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        forbidden_words = ['', ',', 'и', '/', '-', '[', ']', '.рус', '(англ.)', '(', ')', '|', 'править', 'ru', 'en']
+        forbidden_words = ['', ',', 'и', '/', '-', '[', ']', '.рус', '(англ.)', '(', ')', '|', 'править', 'ru', 'en', '(нем.)', 'рус.']
         forbidden_patterns = [r'\[.*\]', r'{']
         proc_items_lst = ['genre', 'country', 'director']
         for proc_item in proc_items_lst:
