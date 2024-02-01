@@ -7,12 +7,14 @@ import numpy as np
 
 class WikiMovies2Spider(scrapy.Spider):
     name = "wiki_movies_2"
-    allowed_domains = ["ru.wikipedia.org"]
+    allowed_domains = ["ru.wikipedia.org", "www.imdb.com"]
     start_urls = ["https://ru.wikipedia.org/wiki/%D0%9A%D0%B0%D1%82%D0%B5%D0%B3%D0%BE%D1%80%D0%B8%D1%8F:%D0%A4%D0%B8%D0%BB%D1%8C%D0%BC%D1%8B_%D0%BF%D0%BE_%D0%B3%D0%BE%D0%B4%D0%B0%D0%BC"]
+
 
     def start_requests(self) -> Iterable[Request]:
         URL = self.start_urls[0]
         yield scrapy.Request(url=URL, callback=self.years_parse)  
+
 
     def years_parse(self, response):
         years_groups = response.css('div.CategoryTreeItem > a')
@@ -22,6 +24,7 @@ class WikiMovies2Spider(scrapy.Spider):
                 if next_page:
                     yield response.follow(url=response.urljoin(next_page), callback=self.movies_parse)
     
+
     def movies_parse(self, response):
         year = response.css('#mw-content-text > div.mw-content-ltr.mw-parser-output > table > tbody > tr > th::text').get()
         if year:
@@ -32,7 +35,7 @@ class WikiMovies2Spider(scrapy.Spider):
                 for movie in group.css('ul > li'):
                     movie_page, title = [*movie.css('a').attrib.values()]
                     if movie_page:
-                        yield response.follow(url=response.urljoin(movie_page), callback=self.movie_page_parse, meta={'year': year, 'title': title})
+                        yield response.follow(url=response.urljoin(movie_page), callback=self.movie_page_parse, meta={ 'year': year, 'title': title })
 
         next_page_buttons = response.css('#mw-pages > a')
         visited_next_page = False
@@ -43,8 +46,10 @@ class WikiMovies2Spider(scrapy.Spider):
                     visited_next_page = True
                     yield response.follow(url=response.urljoin(next_page), callback=self.movies_parse)
 
+
     def movie_page_parse(self, response):
-        genre, director, country = None, None, None
+        genre, director, country, imdb_rate = None, None, None, None
+
         table = response.css('div.mw-content-ltr.mw-parser-output > table > tbody > tr')
         for row_selector in table:
             words = [row.strip() for row in list(set(row_selector.css('::text').getall()))]
@@ -61,12 +66,36 @@ class WikiMovies2Spider(scrapy.Spider):
             if not all(director_lack):
                 director = list(np.array(words)[director_lack])
 
+        extiw_lst = response.css('a.extiw')
+        for el in extiw_lst:
+            data = el.css('a').attrib
+            if 'title' in el.css('a').attrib.keys():
+                if re.search('imdb', data['title']):
+                    imdb_link = response.urljoin(data['href'])
+                    if imdb_link:
+                        yield response.follow(url=imdb_link, callback=self.imdb_parse, meta={ 'year': response.meta['year'], 'title': response.meta['title'], 
+                                                                                             'director': director, 'country': country, 'genre': genre })
+                    break
+
         movie_item = MovieItem()
         movie_item['title'] = response.meta['title']
         movie_item['genre'] = genre
         movie_item['director'] = director
         movie_item['country'] = country
         movie_item['year'] = response.meta['year']
+        movie_item['imdb_rate'] = imdb_rate
         
         yield movie_item
-                    
+
+
+    def imdb_parse(self, response):
+
+        movie_item = MovieItem()
+        movie_item['title'] = response.meta['title']
+        movie_item['year'] = response.meta['year']
+        movie_item['genre'] = response.meta['genre']
+        movie_item['country'] = response.meta['country']
+        movie_item['director'] = response.meta['director']
+        movie_item['imdb_rate'] = response.xpath('/html/body/div[2]/main/div/section[1]/section/div[3]/section/section/div[2]/div[2]/div/div[1]/a/span/div/div[2]/div[1]/span[1]/text()').get()
+        
+        yield movie_item

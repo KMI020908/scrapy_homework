@@ -12,6 +12,10 @@ BOT_NAME = "homework"
 SPIDER_MODULES = ["homework.spiders"]
 NEWSPIDER_MODULE = "homework.spiders"
 
+SCRAPEOPS_API_KEY = '8dfaaced-3130-4249-8345-7e2c49aa6045' 
+SCRAPEOPS_FAKE_USER_AGENT_ENDPOINT = 'https://headers.scrapeops.io/v1/user-agents'
+SCRAPEOPS_FAKE_USER_AGENT_ENABLED = True
+SCRAPEOPS_NUM_RESULTS = 50
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "homework (+http://www.yourdomain.com)"
@@ -20,7 +24,7 @@ NEWSPIDER_MODULE = "homework.spiders"
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-#CONCURRENT_REQUESTS = 32
+CONCURRENT_REQUESTS = 32
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://docs.scrapy.org/en/latest/topics/settings.html#download-delay
@@ -50,9 +54,10 @@ ROBOTSTXT_OBEY = False
 
 # Enable or disable downloader middlewares
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    "homework.middlewares.HomeworkDownloaderMiddleware": 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+   # "homework.middlewares.HomeworkDownloaderMiddleware": 543,
+   "homework.middlewares.ScrapeOpsFakeBrowserHeaderAgentMiddleware": 400
+}
 
 # Enable or disable extensions
 # See https://docs.scrapy.org/en/latest/topics/extensions.html
