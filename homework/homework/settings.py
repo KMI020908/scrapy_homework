@@ -17,6 +17,16 @@ SCRAPEOPS_FAKE_USER_AGENT_ENDPOINT = 'https://headers.scrapeops.io/v1/user-agent
 SCRAPEOPS_FAKE_USER_AGENT_ENABLED = True
 SCRAPEOPS_NUM_RESULTS = 50
 
+# ROTATING_PROXY_LIST = [
+#    '161.35.214.127:43199',
+#    '178.33.3.163:8080',
+#    '188.240.8.86:81',
+#    '103.83.232.122:80',
+#    '103.210.57.243:80',
+#    '185.162.251.76:80',
+#    '103.117.192.14:80'
+# ]
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = "homework (+http://www.yourdomain.com)"
 
@@ -56,7 +66,9 @@ CONCURRENT_REQUESTS = 32
 # See https://docs.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
    # "homework.middlewares.HomeworkDownloaderMiddleware": 543,
-   "homework.middlewares.ScrapeOpsFakeBrowserHeaderAgentMiddleware": 400
+   'homework.middlewares.ScrapeOpsFakeBrowserHeaderAgentMiddleware': 400,
+   # 'rotating_proxies.middlewares.RotatingProxyMiddleware': 610,
+   # 'rotating_proxies.middlewares.BanDetectionMiddleware': 620,
 }
 
 # Enable or disable extensions
