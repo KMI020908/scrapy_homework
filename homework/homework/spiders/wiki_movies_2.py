@@ -71,9 +71,8 @@ class WikiMovies2Spider(scrapy.Spider):
             data = el.css('a').attrib
             if 'title' in el.css('a').attrib.keys():
                 if re.search('imdb', data['title']):
-                    imdb_link = response.urljoin(data['href'])
-                    if imdb_link:
-                        yield response.follow(url=imdb_link, callback=self.imdb_parse, meta={ 'year': response.meta['year'], 'title': response.meta['title'], 
+                    if data['href']:
+                        yield response.follow(url=data['href'], callback=self.imdb_parse, meta={ 'year': response.meta['year'], 'title': response.meta['title'], 
                                                                                              'director': director, 'country': country, 'genre': genre })
                     break
 
